@@ -16,7 +16,7 @@ return [
     |
     */
 
-    'driver' => env('MAIL_MAILER', 'log'),
+    'driver' => env('MAIL_MAILER', 'smtp'),
 
     /*
     |--------------------------------------------------------------------------
@@ -29,7 +29,7 @@ return [
     |
     */
 
-    'host' => env('MAIL_HOST', 'smtp.mailgun.org'),
+    'host' => env('MAIL_HOST', 'vda7000.is.cc'),
 
     /*
     |--------------------------------------------------------------------------
@@ -56,8 +56,8 @@ return [
     */
 
     'from' => [
-        'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
-        'name' => env('MAIL_FROM_NAME', 'Example'),
+        'address' => env('MAIL_FROM_ADDRESS', 'noreply@finstatt.com'),
+        'name' => env('MAIL_FROM_NAME', 'FinstaTT'),
     ],
 
     /*

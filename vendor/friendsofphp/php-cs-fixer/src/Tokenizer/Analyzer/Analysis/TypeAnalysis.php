@@ -26,7 +26,6 @@ final class TypeAnalysis implements StartEndTokenAwareAnalysis
      *
      * @see https://php.net/manual/en/functions.arguments.php#functions.arguments.type-declaration.types
      * @see https://php.net/manual/en/reserved.other-reserved-words.php
-     * @see https://php.net/manual/en/language.pseudo-types.php
      *
      * @var list<string>
      */
@@ -38,6 +37,7 @@ final class TypeAnalysis implements StartEndTokenAwareAnalysis
         'float',
         'int',
         'iterable',
+        'list',
         'mixed',
         'never',
         'null',
@@ -62,7 +62,7 @@ final class TypeAnalysis implements StartEndTokenAwareAnalysis
     /**
      * @param ($startIndex is null ? null : int) $endIndex
      */
-    public function __construct(string $name, int $startIndex = null, int $endIndex = null)
+    public function __construct(string $name, ?int $startIndex = null, ?int $endIndex = null)
     {
         $this->name = $name;
 
