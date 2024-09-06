@@ -1051,6 +1051,7 @@ class ComposerStaticInitfd5e7e5e9553a8cca433daddcd158df8
         'App\\Http\\Requests\\VerifyProfileAssetsRequest' => __DIR__ . '/../..' . '/app/Http/Requests/VerifyProfileAssetsRequest.php',
         'App\\Http\\Requests\\VerifyTwoFactorCodeRequest' => __DIR__ . '/../..' . '/app/Http/Requests/VerifyTwoFactorCodeRequest.php',
         'App\\Mail\\GenericEmail' => __DIR__ . '/../..' . '/app/Mail/GenericEmail.php',
+        'App\\Mail\\TestEmail' => __DIR__ . '/../..' . '/app/Mail/TestEmail.php',
         'App\\Model\\Attachment' => __DIR__ . '/../..' . '/app/Model/Attachment.php',
         'App\\Model\\ContactMessage' => __DIR__ . '/../..' . '/app/Model/ContactMessage.php',
         'App\\Model\\Country' => __DIR__ . '/../..' . '/app/Model/Country.php',

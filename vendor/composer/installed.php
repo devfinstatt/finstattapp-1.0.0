@@ -1,11 +1,11 @@
 <?php return array(
     'root' => array(
-        'pretty_version' => 'dev-master',
-        'version' => 'dev-master',
+        'pretty_version' => '1.0.0+no-version-set',
+        'version' => '1.0.0.0',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
-        'reference' => '2093d80dc71a420ac3e6d0e42c7830083a069730',
+        'reference' => NULL,
         'name' => 'theqdev/justfans',
         'dev' => true,
     ),
@@ -1890,12 +1890,12 @@
             'dev_requirement' => false,
         ),
         'theqdev/justfans' => array(
-            'pretty_version' => 'dev-master',
-            'version' => 'dev-master',
+            'pretty_version' => '1.0.0+no-version-set',
+            'version' => '1.0.0.0',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
-            'reference' => '2093d80dc71a420ac3e6d0e42c7830083a069730',
+            'reference' => NULL,
             'dev_requirement' => false,
         ),
         'theseer/tokenizer' => array(

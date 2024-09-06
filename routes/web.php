@@ -153,7 +153,8 @@ Route::group(['middleware' => ['auth','verified','2fa']], function () {
     Route::get('/feed/posts', ['uses' => 'FeedController@getFeedPosts', 'as'   => 'feed.posts']);
 
     // File uploader routes
-    Route::group(['prefix' => 'attachment', 'as' => 'attachment.'], function () {
+
+   Route::group(['prefix' => 'attachment', 'as' => 'attachment.'], function () {
         Route::post('/upload/{type}', ['uses' => 'AttachmentController@upload', 'as'   => 'upload']);
         Route::post('/uploadChunked/{type}', ['uses' => 'AttachmentController@uploadChunk', 'as'   => 'upload.chunked']);
         Route::post('/remove', ['uses' => 'AttachmentController@removeAttachment', 'as'   => 'remove']);
@@ -288,3 +289,15 @@ Route::get('/{username}/streams', ['uses' => 'ProfileController@getUserStreams',
 Route::fallback(function(){
     abort(404);
 });
+
+Auth::routes();
+
+Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+
+Auth::routes();
+
+Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+
+Auth::routes();
+
+Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');

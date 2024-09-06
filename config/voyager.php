@@ -227,15 +227,17 @@ return [
     'media' => [
         // The allowed mimetypes to be uploaded through the media-manager.
         'allowed_mimetypes' => ["image", "audio", "video"], //All types can be uploaded
-        /*
+
         'allowed_mimetypes' => [
           'image/jpeg',
           'image/png',
           'image/gif',
           'image/bmp',
           'video/mp4',
+	  'application/pdf',
+	  'image/webp',
         ],
-        */
+
         //Path for media-manager. Relative to the filesystem.
         'path'                => '/',
         'show_folders'        => true,

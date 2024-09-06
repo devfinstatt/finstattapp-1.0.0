@@ -159,6 +159,7 @@ return array(
     'App\\Http\\Requests\\VerifyProfileAssetsRequest' => $baseDir . '/app/Http/Requests/VerifyProfileAssetsRequest.php',
     'App\\Http\\Requests\\VerifyTwoFactorCodeRequest' => $baseDir . '/app/Http/Requests/VerifyTwoFactorCodeRequest.php',
     'App\\Mail\\GenericEmail' => $baseDir . '/app/Mail/GenericEmail.php',
+    'App\\Mail\\TestEmail' => $baseDir . '/app/Mail/TestEmail.php',
     'App\\Model\\Attachment' => $baseDir . '/app/Model/Attachment.php',
     'App\\Model\\ContactMessage' => $baseDir . '/app/Model/ContactMessage.php',
     'App\\Model\\Country' => $baseDir . '/app/Model/Country.php',
