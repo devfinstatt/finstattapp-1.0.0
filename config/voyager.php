@@ -230,12 +230,17 @@ return [
 
         'allowed_mimetypes' => [
           'image/jpeg',
+          'image/pjpeg',
           'image/png',
           'image/gif',
           'image/bmp',
           'video/mp4',
-	  'application/pdf',
-	  'image/webp',
+          'video/quicktime',
+	      'application/pdf',
+	      'image/webp',
+          'audio/flac',
+          'audio/aac',
+          'audio/mpeg',
         ],
 
         //Path for media-manager. Relative to the filesystem.
