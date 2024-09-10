@@ -22,7 +22,7 @@ class AttachmentServiceProvider extends ServiceProvider
     public static $videoEncodingPresets = [
         'size' => ['videoBitrate'=> 500, 'audioBitrate' => 128, 'quality' => 1],
         'balanced' => ['videoBitrate'=> 1000, 'audioBitrate' => 256, 'quality' => 3],
-        'quality' => ['videoBitrate'=> 2000, 'audioBitrate' => 512, 'quality' => 5],
+        'quality' => ['videoBitrate'=> 4000, 'audioBitrate' => 512, 'quality' => 5],
     ];
 
     /**
