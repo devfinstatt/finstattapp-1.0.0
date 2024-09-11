@@ -20,9 +20,9 @@ class AttachmentServiceProvider extends ServiceProvider
 
     // Mixed for ffmpeg and coconut
     public static $videoEncodingPresets = [
-        'size' => ['videoBitrate'=> 1000, 'audioBitrate' => 128, 'quality' => 1],
-        'balanced' => ['videoBitrate'=> 4000, 'audioBitrate' => 256, 'quality' => 3],
-        'quality' => ['videoBitrate'=> 8000, 'audioBitrate' => 512, 'quality' => 5],
+        'size' => ['videoBitrate'=> 4000, 'audioBitrate' => 128, 'quality' => 1],
+        'balanced' => ['videoBitrate'=> 8000, 'audioBitrate' => 256, 'quality' => 3],
+        'quality' => ['videoBitrate'=> 15000, 'audioBitrate' => 512, 'quality' => 5],
     ];
 
     /**
