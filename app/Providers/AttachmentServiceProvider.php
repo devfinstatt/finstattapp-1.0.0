@@ -20,9 +20,9 @@ class AttachmentServiceProvider extends ServiceProvider
 
     // Mixed for ffmpeg and coconut
     public static $videoEncodingPresets = [
-        'size' => ['videoBitrate'=> 500, 'audioBitrate' => 128, 'quality' => 1],
-        'balanced' => ['videoBitrate'=> 1000, 'audioBitrate' => 256, 'quality' => 3],
-        'quality' => ['videoBitrate'=> 2000, 'audioBitrate' => 512, 'quality' => 5],
+        'size' => ['videoBitrate'=> 4000, 'audioBitrate' => 128, 'quality' => 1],
+        'balanced' => ['videoBitrate'=> 8000, 'audioBitrate' => 256, 'quality' => 3],
+        'quality' => ['videoBitrate'=> 15000, 'audioBitrate' => 512, 'quality' => 5],
     ];
 
     /**
@@ -282,25 +282,37 @@ class AttachmentServiceProvider extends ServiceProvider
                     }
                 }
 
-// Add watermark if enabled in admin
-        if (getSetting('media.apply_watermark')) {
-            $dimensions = $video
-                ->getVideoStream()
-                ->getDimensions();
-            if(getSetting('media.watermark_image')) {
-                // Cache the watermark image
-                $watermarkCacheKey = 'watermark_' . md5(self::getWatermarkPath());
-                $watermark = Cache::remember($watermarkCacheKey, 60 * 24, function () use ($dimensions) {
-                    $watermark = Image::make(self::getWatermarkPath());
-                    $resizePercentage = 75;
-                    $watermarkSize = round($dimensions->getWidth() * ((100 - $resizePercentage) / 100), 2);
-                    $watermark->resize($watermarkSize, null, function ($constraint) {
-                        $constraint->aspectRatio();
-                    });
-                    return $watermark->encode('png', 100)->encoded;
-                });
+                // Add watermark if enabled in admin
+                if (getSetting('media.apply_watermark')) {
+                    $dimensions = $video
+                        ->getVideoStream()
+                        ->getDimensions();
+                    if(getSetting('media.watermark_image')) {
+                        // Add watermark to post images
+                        $watermark = Image::make(self::getWatermarkPath());
+                        $tmpWatermarkFile = 'watermark-' . $fileId . '-.png';
+                        $resizePercentage = 75; //70% less then an actual image (play with this value)
+                        $watermarkSize = round($dimensions->getWidth() * ((100 - $resizePercentage) / 100), 2); //watermark will be $resizePercentage less then the actual width of the image
+                        // resize watermark width keep height auto
+                        $watermark->resize($watermarkSize, null, function ($constraint) {
+                            $constraint->aspectRatio();
+                        });
+                        $watermark->encode('png', 100);
+                        Storage::disk('tmp')->put($tmpWatermarkFile, $watermark);
+                        if (getSetting('media.apply_watermark')) {
+                            $video->addWatermark(function (WatermarkFactory $watermark) use ($fileId, $tmpWatermarkFile) {
+                                $watermark->fromDisk('tmp')
+                                    ->open($tmpWatermarkFile)
+                                    ->right(25)
+                                    ->bottom(25);
+                            });
+                        }
+                    }
 
+<<<<<<< HEAD
+=======
 
+>>>>>>> parent of 1cd60c4f (Update AttachmentServiceProvider.php)
                     if(getSetting('media.use_url_watermark')){
                         $textWaterMark = str_replace(['https://','http://','www.'],'',route('profile',['username'=>Auth::user()->username]));
                         $textWaterMarkSize = 3 / 100 * $dimensions->getWidth();
@@ -471,48 +483,21 @@ class AttachmentServiceProvider extends ServiceProvider
      *
      * @return mixed|string
      */
-    // public static function getWatermarkPath()
-    // {
-    //     return Cache::remember('watermark_path', 60 * 24, function () {
-    //         $watermark_image = getSetting('media.watermark_image');
-    //         if ($watermark_image) {
-    //             if (strpos($watermark_image, 'download_link') !== false) {
-    //                 $watermark_image = json_decode($watermark_image);
-    //                 if ($watermark_image) {
-    //                     return Storage::disk(config('filesystems.defaultFilesystemDriver'))
-    //                         ->path($watermark_image[0]->download_link);
-    //                 }
-    //             }
-    //             return $watermark_image;
-    //         }
-    //         return public_path('img/logo-black.png');
-    //     });
-    // }
-
-    // ... other methods ...
-}
-
-    /**
-     * Method used to return real watermark path / fallback to the default one.
-     *
-     * @return mixed|string
-     */
     public static function getWatermarkPath()
     {
-        return Cache::remember('watermark_path', 60 * 24, function () {
-            $watermark_image = getSetting('media.watermark_image');
-            if ($watermark_image) {
-                if (strpos($watermark_image, 'download_link') !== false) {
-                    $watermark_image = json_decode($watermark_image);
-                    if ($watermark_image) {
-                        return Storage::disk(config('filesystems.defaultFilesystemDriver'))
-                            ->path($watermark_image[0]->download_link);
-                    }
+        $watermark_image = getSetting('media.watermark_image');
+        if($watermark_image){
+            if (strpos($watermark_image, 'download_link')) {
+                $watermark_image = json_decode($watermark_image);
+                if ($watermark_image) {
+                    $watermark_image = Storage::disk(config('filesystems.defaultFilesystemDriver'))->path($watermark_image[0]->download_link);
                 }
-                return $watermark_image;
             }
-            return public_path('img/logo-black.png');
-        });
+        }
+        else{
+            $watermark_image = public_path('img/logo-black.png');
+        }
+        return $watermark_image;
     }
 
     /**
