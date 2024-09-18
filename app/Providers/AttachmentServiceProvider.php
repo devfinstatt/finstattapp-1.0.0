@@ -301,12 +301,23 @@ class AttachmentServiceProvider extends ServiceProvider
                 });
 
 
-                    if(getSetting('media.use_url_watermark')){
-                        $textWaterMark = str_replace(['https://','http://','www.'],'',route('profile',['username'=>Auth::user()->username]));
-                        $textWaterMarkSize = 3 / 100 * $dimensions->getWidth();
-                        // Note: Some hosts might need to default font on public_path('/fonts/OpenSans-Semibold.ttf') instead of verdana
-                        $filter = new CustomFilter("drawtext=text='".$textWaterMark."':x=10:y=H-th-10:fontfile='".(env('FFMPEG_FONT_PATH') ?? 'Verdana')."':fontsize={$textWaterMarkSize}:fontcolor=white: x=(w-text_w)-25: y=(h-text_h)-35");
-                        $video->addFilter($filter);
+                    if (getSetting('media.use_url_watermark')) {
+                    // Extract username and remove unnecessary parts of the URL
+                    $textWaterMark = str_replace(['https://', 'http://', 'www.'], '', route('profile', ['username' => Auth::user()->username]));
+                    
+                    // Set watermark font size based on the video width
+                    $textWaterMarkSize = 3 / 100 * $dimensions->getWidth();
+                    
+                    // Path to the font, defaulting to Verdana if not set in the environment
+                    $fontPath = env('FFMPEG_FONT_PATH') ?? 'Verdana';
+                    
+                    // Apply the watermark to the video using FFMPEG
+                    $filter = new CustomFilter(
+                        "drawtext=text='{$textWaterMark}':x=10:y=H-th-10:fontfile='{$fontPath}':fontsize={$textWaterMarkSize}:fontcolor=white:x=(w-text_w)-25:y=(h-text_h)-35"
+                    );
+                    
+                    // Add the filter to the video
+                    $video->addFilter($filter);
                     }
 
                 }
