@@ -15,7 +15,7 @@ return [
         'default_role'                 => 'user',
         'default_cover'               => '/img/default-cover.png',
         'default_avatar'               => '/img/default-avatar.jpg',
-        'redirect'                     => '/admin',
+        'redirect'                     => '/finstatt-batcave-admin',
     ],
 
     /*
