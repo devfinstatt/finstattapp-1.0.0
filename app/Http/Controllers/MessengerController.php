@@ -330,11 +330,17 @@ class MessengerController extends Controller
                     // 2. Copy the assets of previous attachment to the new one
                     $storage = Storage::disk(AttachmentServiceProvider::getStorageProviderName($attachment->driver));
                     if($attachment->driver != Attachment::PUSHR_DRIVER){
-                        $storage->copy($attachment->filename,$newFileName);
+                        // Instead of just copying, ensure we're uploading to CDN
+                        $fileContents = $storage->get($attachment->filename);
+                        $cdnStorage = Storage::disk('s3'); // or whatever your CDN disk is named
+                        $cdnStorage->put($newFileName, $fileContents, 'public');
                     }
                     else{
                         // Pushr logic - Copy alternative as S3Adapter fails to do ->copy operations
-                        AttachmentServiceProvider::pushrCDNCopy($attachment,$newFileName);
+                        if (!AttachmentServiceProvider::pushrCDNCopy($attachment, $newFileName)) {
+                            // Handle the error case, e.g., log it or throw an exception
+                            \Log::error("Failed to copy Pushr CDN attachment: " . $attachment->id);
+                        }
                     }
                     if (AttachmentServiceProvider::getAttachmentType($attachment->type) == 'image') {
                         $thumbnailDir = 'messenger/images/150X150/';
