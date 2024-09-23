@@ -19,6 +19,7 @@ use App\Providers\SettingsServiceProvider;
 use App\User;
 use Carbon\Carbon;
 use DB;
+use Intervention\Image\Facades\Image;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Auth;
@@ -344,9 +345,16 @@ class MessengerController extends Controller
                     }
                     if (AttachmentServiceProvider::getAttachmentType($attachment->type) == 'image') {
                         $thumbnailDir = 'messenger/images/300X300/';
-                        $thumbnailfilePath = $thumbnailDir.'/'.$id.'.jpg';
-                        if($attachment->driver != Attachment::PUSHR_DRIVER){
-                            $storage->copy($thumbnailDir.'/'.$attachment->id.'.jpg', $thumbnailDir.'/'.$attachment->id.'.jpg');
+                        $thumbnailfilePath = $thumbnailDir . $id . '.jpg';
+                        if ($attachment->driver != Attachment::PUSHR_DRIVER) {
+                            // Generate thumbnail
+                            $image = Image::make($storage->get($attachment->filename));
+                            $image->fit(300, 300);
+                            $thumbnailContent = $image->stream('jpg')->__toString();
+
+                            // Save to CDN
+                            $cdnStorage = Storage::disk('s3');
+                            $cdnStorage->put($thumbnailfilePath, $thumbnailContent, 'public');
                         }
                         else {
                             // Pushr logic - Copy alternative as S3Adapter fails to do ->copy operations
