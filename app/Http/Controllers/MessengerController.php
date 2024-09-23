@@ -661,6 +661,12 @@ class MessengerController extends Controller
         }
         $message->sender['canEarnMoney'] = Auth::user()->id === $message->sender->id ? GenericHelperServiceProvider::creatorCanEarnMoney($message->receiver) : GenericHelperServiceProvider::creatorCanEarnMoney($message->sender);
 
+        foreach ($message->attachments as $attachment) {
+            if (AttachmentServiceProvider::getAttachmentType($attachment->type) == 'image') {
+                $attachment->thumbnail_url = Storage::disk('s3')->url('messenger/images/300X300/' . $attachment->id . '.jpg');
+            }
+        }
+
         return $message;
     }
 
