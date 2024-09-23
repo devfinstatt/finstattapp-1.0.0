@@ -252,10 +252,6 @@ class MessengerController extends Controller
                 $message->sender->profileUrl = route('profile', ['username'=> $message->sender->username]);
                 $message->receiver->profileUrl = route('profile', ['username'=> $message->receiver->username]);
                 $message = self::cleanUpMessageData($message);
-                
-                // Add more debugging information
-                $message->debug_info['raw_attachments'] = $message->attachments->toArray();
-                
                 return $message;
             });
 
@@ -263,12 +259,6 @@ class MessengerController extends Controller
             'status'=>'success',
             'data'=>[
                 'messages' => $conversation,
-                'debug_info' => [
-                    'total_messages' => $conversation->count(),
-                    'messages_with_attachments' => $conversation->filter(function($message) {
-                        return $message->attachments->isNotEmpty();
-                    })->count(),
-                ],
             ], ]);
     }
 
@@ -362,26 +352,13 @@ class MessengerController extends Controller
                             $image->fit(300, 300);
                             $thumbnailContent = $image->stream('jpg')->__toString();
 
-                            // Log thumbnail creation
-                            \Log::info("Thumbnail created for attachment: " . $id);
-
                             // Save to CDN
                             $cdnStorage = Storage::disk('s3');
                             $cdnStorage->put($thumbnailfilePath, $thumbnailContent, 'public');
-
-                            // Log successful upload and get the URL
-                            \Log::info("Thumbnail uploaded to S3: " . $thumbnailfilePath);
-                            $thumbnailUrl = $cdnStorage->url($thumbnailfilePath);
-                            \Log::info("Thumbnail S3 URL: " . $thumbnailUrl);
-
-                            // Store the thumbnail URL with the attachment
-                            $attachment->thumbnail_url = $thumbnailUrl;
-                            $attachment->save();
                         }
                         else {
                             // Pushr logic - Copy alternative as S3Adapter fails to do ->copy operations
-                            $success = AttachmentServiceProvider::pushrCDNCopy($attachment,$thumbnailfilePath);
-                            \Log::info("Pushr thumbnail copy result: " . ($success ? "Success" : "Failure"));
+                            AttachmentServiceProvider::pushrCDNCopy($attachment,$thumbnailfilePath);
                         }
                     }
                 }
@@ -683,22 +660,6 @@ class MessengerController extends Controller
             $message->attachments = collect([]);
         }
         $message->sender['canEarnMoney'] = Auth::user()->id === $message->sender->id ? GenericHelperServiceProvider::creatorCanEarnMoney($message->receiver) : GenericHelperServiceProvider::creatorCanEarnMoney($message->sender);
-
-        foreach ($message->attachments as $attachment) {
-            if (AttachmentServiceProvider::getAttachmentType($attachment->type) == 'image') {
-                // Use the stored thumbnail URL if available, otherwise generate it
-                $attachment->thumbnail_url = $attachment->thumbnail_url ?? 
-                    Storage::disk('s3')->url('messenger/images/300X300/' . $attachment->id . '.jpg');
-                
-                \Log::info("Attachment ID: " . $attachment->id . ", Thumbnail URL: " . $attachment->thumbnail_url);
-            }
-        }
-
-        // Add debugging information
-        $message->debug_info = [
-            'attachment_count' => $message->attachments->count(),
-            'has_thumbnails' => $message->attachments->where('thumbnail_url', '!=', null)->count() > 0,
-        ];
 
         return $message;
     }
