@@ -344,20 +344,13 @@ class MessengerController extends Controller
                     }
                     if (AttachmentServiceProvider::getAttachmentType($attachment->type) == 'image') {
                         $thumbnailDir = 'messenger/images/300X300/';
-                        $thumbnailFilePath = $thumbnailDir . '/' . $id . '.jpg';
-                    
-                        // Attempt to upload the thumbnail to AWS S3 first
-                        if ($attachment->driver == Attachment::PUSHR_DRIVER) {
-                            // Handle the Pushr CDN upload
-                            AttachmentServiceProvider::pushrCDNCopy($attachment, $thumbnailFilePath);
-                        } else {
-                            // For other drivers, upload to AWS S3
-                            $s3Result = $storage->put($thumbnailFilePath, file_get_contents($thumbnailDir . '/' . $attachment->id . '.jpg'));
-                            
-                            if (!$s3Result) {
-                                // Handle upload failure, if necessary
-                                throw new Exception('Failed to upload thumbnail to S3.');
-                            }
+                        $thumbnailfilePath = $thumbnailDir.'/'.$id.'.jpg';
+                        if($attachment->driver != Attachment::PUSHR_DRIVER){
+                            $storage->copy($thumbnailDir.'/'.$attachment->id.'.jpg',$thumbnailfilePath);
+                        }
+                        else {
+                            // Pushr logic - Copy alternative as S3Adapter fails to do ->copy operations
+                            AttachmentServiceProvider::pushrCDNCopy($attachment,$thumbnailfilePath);
                         }
                     }
                 }
