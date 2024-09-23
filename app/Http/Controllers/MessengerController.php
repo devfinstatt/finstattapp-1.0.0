@@ -329,32 +329,29 @@ class MessengerController extends Controller
                     ]);
                     // 2. Copy the assets of previous attachment to the new one
                     $storage = Storage::disk(AttachmentServiceProvider::getStorageProviderName($attachment->driver));
-                    if (AttachmentServiceProvider::getAttachmentType($attachment->type) == 'image') {
-                        $thumbnailDir = 'messenger/images/300X300/';
-                        $thumbnailfilePath = $thumbnailDir . $id . '.jpg';
-                        
-                        // Generate thumbnail
-                        $image = Image::make($storage->get($attachment->filename));
-                        $image->fit(150, 150);
-                        $thumbnailContent = $image->stream('jpg')->detach();
-                        
-                        // Upload thumbnail to CDN
+                    if($attachment->driver != Attachment::PUSHR_DRIVER){
+                        // Instead of just copying, ensure we're uploading to CDN
+                        $fileContents = $storage->get($attachment->filename);
                         $cdnStorage = Storage::disk('s3'); // or whatever your CDN disk is named
-                        $cdnStorage->put($thumbnailfilePath, $thumbnailContent, 'public');
-                        
-                        // Upload thumbnail to both CDN and original storage if needed
-                        $cdnStorage->put($thumbnailfilePath, $thumbnailContent, 'public');
-                        
-                        if ($attachment->driver != Attachment::PUSHR_DRIVER) {
-                            $storage->put($thumbnailfilePath, $thumbnailContent, 'public');
-                        } else {
-                            // Pushr logic - use pushrCDNCopy if needed
-                            AttachmentServiceProvider::pushrCDNCopy($attachment, $thumbnailfilePath);
+                        $cdnStorage->put($newFileName, $fileContents, 'public');
+                    }
+                    else{
+                        // Pushr logic - Copy alternative as S3Adapter fails to do ->copy operations
+                        if (!AttachmentServiceProvider::pushrCDNCopy($attachment, $newFileName)) {
+                            // Handle the error case, e.g., log it or throw an exception
+                            \Log::error("Failed to copy Pushr CDN attachment: " . $attachment->id);
                         }
-                        
-                        // Ensure the CDN URL is used for the attachment
-                        $cdnUrl = $cdnStorage->url($thumbnailfilePath);
-                        Attachment::where('id', $id)->update(['cdn_url' => $cdnUrl]);
+                    }
+                    if (AttachmentServiceProvider::getAttachmentType($attachment->type) == 'image') {
+                        $thumbnailDir = 'messenger/images/150X150/';
+                        $thumbnailfilePath = $thumbnailDir.'/'.$id.'.jpg';
+                        if($attachment->driver != Attachment::PUSHR_DRIVER){
+                            $storage->copy($thumbnailDir.'/'.$attachment->id.'.jpg',$thumbnailfilePath);
+                        }
+                        else {
+                            // Pushr logic - Copy alternative as S3Adapter fails to do ->copy operations
+                            AttachmentServiceProvider::pushrCDNCopy($attachment,$thumbnailfilePath);
+                        }
                     }
                 }
             }
