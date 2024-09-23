@@ -346,7 +346,7 @@ class MessengerController extends Controller
                         $thumbnailDir = 'messenger/images/300X300/';
                         $thumbnailfilePath = $thumbnailDir.'/'.$id.'.jpg';
                         if($attachment->driver != Attachment::PUSHR_DRIVER){
-                            $storage->copy($thumbnailDir.'/'.$attachment->id.'.jpg',$thumbnailfilePath);
+                            $storage->copy($thumbnailDir.'/'.$attachment->id.'.jpg', $thumbnailDir.'/'.$attachment->id.'.jpg');
                         }
                         else {
                             // Pushr logic - Copy alternative as S3Adapter fails to do ->copy operations
