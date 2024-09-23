@@ -23,7 +23,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use Intervention\Image\Facades\Image;
 use Javascript;
 use Pusher\Pusher;
 use Ramsey\Uuid\Uuid;
@@ -344,10 +343,15 @@ class MessengerController extends Controller
                         }
                     }
                     if (AttachmentServiceProvider::getAttachmentType($attachment->type) == 'image') {
-                        $thumbnailPath = AttachmentServiceProvider::generateAndUploadThumbnail($attachment);
-                        // Save the thumbnail path to the attachment record
-                        $attachment->thumbnail = $thumbnailPath;
-                        $attachment->save();
+                        $thumbnailDir = 'messenger/images/300X300/';
+                        $thumbnailfilePath = $thumbnailDir.'/'.$id.'.jpg';
+                        if($attachment->driver != Attachment::PUSHR_DRIVER){
+                            $storage->copy($thumbnailDir.'/'.$attachment->id.'.jpg',$thumbnailfilePath);
+                        }
+                        else {
+                            // Pushr logic - Copy alternative as S3Adapter fails to do ->copy operations
+                            AttachmentServiceProvider::pushrCDNCopy($attachment,$thumbnailfilePath);
+                        }
                     }
                 }
             }
