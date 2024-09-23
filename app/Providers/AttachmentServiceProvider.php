@@ -241,10 +241,10 @@ class AttachmentServiceProvider extends ServiceProvider
 
         // generate thumbnail
         if ($generateThumbnail && self::getAttachmentType($fileExtension) === 'image') {
-            $width = 150;
-            $height = 150;
+            $width = 300;
+            $height = 300;
             $img = Image::make($file);
-            $img->fit(150, 150, function ($constraint) {
+            $img->fit(300, 300, function ($constraint) {
                 $constraint->aspectRatio();
             });
             $img->encode('jpg', 100);
