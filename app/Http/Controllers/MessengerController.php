@@ -330,7 +330,7 @@ class MessengerController extends Controller
                     // 2. Copy the assets of previous attachment to the new one
                     $storage = Storage::disk(AttachmentServiceProvider::getStorageProviderName($attachment->driver));
                     if (AttachmentServiceProvider::getAttachmentType($attachment->type) == 'image') {
-                        $thumbnailDir = 'messenger/images/150X150/';
+                        $thumbnailDir = 'messenger/images/300X300/';
                         $thumbnailfilePath = $thumbnailDir . $id . '.jpg';
                         
                         // Generate thumbnail
@@ -342,14 +342,19 @@ class MessengerController extends Controller
                         $cdnStorage = Storage::disk('s3'); // or whatever your CDN disk is named
                         $cdnStorage->put($thumbnailfilePath, $thumbnailContent, 'public');
                         
-                        // If you still need to keep a copy in the original storage
-                        if($attachment->driver != Attachment::PUSHR_DRIVER){
+                        // Upload thumbnail to both CDN and original storage if needed
+                        $cdnStorage->put($thumbnailfilePath, $thumbnailContent, 'public');
+                        
+                        if ($attachment->driver != Attachment::PUSHR_DRIVER) {
                             $storage->put($thumbnailfilePath, $thumbnailContent, 'public');
-                        }
-                        else {
+                        } else {
                             // Pushr logic - use pushrCDNCopy if needed
                             AttachmentServiceProvider::pushrCDNCopy($attachment, $thumbnailfilePath);
                         }
+                        
+                        // Ensure the CDN URL is used for the attachment
+                        $cdnUrl = $cdnStorage->url($thumbnailfilePath);
+                        Attachment::where('id', $id)->update(['cdn_url' => $cdnUrl]);
                     }
                 }
             }
