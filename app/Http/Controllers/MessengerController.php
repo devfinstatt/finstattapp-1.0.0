@@ -344,7 +344,7 @@ class MessengerController extends Controller
                         }
                     }
                     if (AttachmentServiceProvider::getAttachmentType($attachment->type) == 'image') {
-                        $thumbnailDir = 'messenger/images/300X300/';
+                        $thumbnailDir = 'messenger/images/150X150/';
                         $thumbnailfilePath = $thumbnailDir . $id . '.jpg';
                         if ($attachment->driver != Attachment::PUSHR_DRIVER) {
                             // Generate thumbnail
