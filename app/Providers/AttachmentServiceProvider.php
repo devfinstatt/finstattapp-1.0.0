@@ -259,72 +259,113 @@ class AttachmentServiceProvider extends ServiceProvider
         // Convert videos to mp4s
         if (self::getAttachmentType($fileExtension) === 'video') {
             if (getSetting('media.transcoding_driver') === 'ffmpeg') {
-                // Move tmp file onto local files path, as ffmpeg can't handle absolute paths
-                $filePath = $fileId.'.'.$fileExtension;
-                Storage::disk('tmp')->put($filePath, $fileContent);
-
-                $fileExtension = 'mp4';
-                $newfilePath = $directory.'/'.$fileId.'.'.$fileExtension;
-
-                // Converting the video
-                $video = FFMpeg::
-                fromDisk('tmp')
-                    ->open($filePath);
-
-                // Checking if uploaded videos do no exceed maximum length in seconds
-                if(getSetting('media.max_videos_length')){
-                    $maxLength = (int)getSetting('media.max_videos_length');
-                    $videoLength = $video->getFormat()->get('duration');
-                    $videoLength = explode('.',$videoLength);
-                    $videoLength = (int)$videoLength[0];
-                    if($videoLength > $maxLength){
-                        throw new \Exception(__("Uploaded videos can not longer than :length seconds.",['length'=>$maxLength]));
-                    }
-                }
-
-                // Add watermark if enabled in admin
-                if (getSetting('media.apply_watermark')) {
-                    $dimensions = $video
-                        ->getVideoStream()
-                        ->getDimensions();
-                    if(getSetting('media.watermark_image')) {
-                        // Add watermark to post images
-                        $watermark = Image::make(self::getWatermarkPath());
-                        $tmpWatermarkFile = 'watermark-' . $fileId . '-.png';
-                        $resizePercentage = 75; //70% less then an actual image (play with this value)
-                        $watermarkSize = round($dimensions->getWidth() * ((100 - $resizePercentage) / 100), 2); //watermark will be $resizePercentage less then the actual width of the image
-                        // resize watermark width keep height auto
-                        $watermark->resize($watermarkSize, null, function ($constraint) {
-                            $constraint->aspectRatio();
-                        });
-                        $watermark->encode('png', 100);
-                        Storage::disk('tmp')->put($tmpWatermarkFile, $watermark);
-                        if (getSetting('media.apply_watermark')) {
-                            $video->addWatermark(function (WatermarkFactory $watermark) use ($fileId, $tmpWatermarkFile) {
-                                $watermark->fromDisk('tmp')
-                                    ->open($tmpWatermarkFile)
-                                    ->right(25)
-                                    ->bottom(25);
-                            });
-                        }
-                    }
-
-                    if(getSetting('media.use_url_watermark')){
-                        $textWaterMark = str_replace(['https://','http://','www.'],'',route('profile',['username'=>Auth::user()->username]));
-                        $textWaterMarkSize = 3 / 100 * $dimensions->getWidth();
-                        // Note: Some hosts might need to default font on public_path('/fonts/OpenSans-Semibold.ttf') instead of verdana
-                        $filter = new CustomFilter("drawtext=text='".$textWaterMark."':x=10:y=H-th-10:fontfile='".(env('FFMPEG_FONT_PATH') ?? 'Verdana')."':fontsize={$textWaterMarkSize}:fontcolor=white: x=(w-text_w)-25: y=(h-text_h)-35");
-                        $video->addFilter($filter);
-                    }
-
-                }
-
-                // Re-converting mp4 only if enforced by the admin setting
                 if($initialFileExtension == 'mp4' && !getSetting('media.enforce_mp4_conversion')){
                     $filePath = $directory.'/'.$fileId.'.'.$fileExtension;
                     $storage->put($filePath, $fileContent, 'public');
+                    
+                    // Apply watermark without reconverting
+                    if (getSetting('media.apply_watermark')) {
+                        $watermarkedFilePath = $directory.'/watermarked_'.$fileId.'.'.$fileExtension;
+                        $ffmpeg = FFMpeg::create();
+                        $video = $ffmpeg->open(Storage::path($filePath));
+                        
+                        $filterComplex = [];
+                        $inputs = [];
+                        
+                        if(getSetting('media.watermark_image')) {
+                            $watermarkPath = self::getWatermarkPath();
+                            $filterComplex[] = "[0:v][1:v] overlay=main_w-overlay_w-25:main_h-overlay_h-25";
+                            $inputs[] = '-i';
+                            $inputs[] = $watermarkPath;
+                        }
+                        
+                        if(getSetting('media.use_url_watermark')){
+                            $textWaterMark = str_replace(['https://','http://','www.'],'',route('profile',['username'=>Auth::user()->username]));
+                            $filterComplex[] = "drawtext=text='{$textWaterMark}':fontfile='" . (env('FFMPEG_FONT_PATH') ?? 'Verdana') . "':fontsize=24:fontcolor=white:x=w-tw-25:y=h-th-35";
+                        }
+                        
+                        if (!empty($filterComplex)) {
+                            $filterString = implode(',', $filterComplex);
+                            $video->filters()->custom($filterString, $inputs);
+                            
+                            $video->save(new X264(), Storage::path($watermarkedFilePath));
+                            
+                            // Replace the original file with the watermarked one
+                            Storage::delete($filePath);
+                            Storage::move($watermarkedFilePath, $filePath);
+                        }
+                        
+                        // Generate thumbnail
+                        FFMpeg::fromDisk(config('filesystems.defaultFilesystemDriver'))
+                            ->open($filePath)
+                            ->getFrameFromSeconds(1)
+                            ->export()
+                            ->toDisk(config('filesystems.defaultFilesystemDriver'))
+                            ->save($directory.'/thumbnails/'.$fileId.'.jpg');
+                        $hasThumbnail = true;
+                    }
                 }
                 else{
+                    // Move tmp file onto local files path, as ffmpeg can't handle absolute paths
+                    $filePath = $fileId.'.'.$fileExtension;
+                    Storage::disk('tmp')->put($filePath, $fileContent);
+
+                    $fileExtension = 'mp4';
+                    $newfilePath = $directory.'/'.$fileId.'.'.$fileExtension;
+
+                    // Converting the video
+                    $video = FFMpeg::
+                    fromDisk('tmp')
+                        ->open($filePath);
+
+                    // Checking if uploaded videos do no exceed maximum length in seconds
+                    if(getSetting('media.max_videos_length')){
+                        $maxLength = (int)getSetting('media.max_videos_length');
+                        $videoLength = $video->getFormat()->get('duration');
+                        $videoLength = explode('.',$videoLength);
+                        $videoLength = (int)$videoLength[0];
+                        if($videoLength > $maxLength){
+                            throw new \Exception(__("Uploaded videos can not longer than :length seconds.",['length'=>$maxLength]));
+                        }
+                    }
+
+                    // Add watermark if enabled in admin
+                    if (getSetting('media.apply_watermark')) {
+                        $dimensions = $video
+                            ->getVideoStream()
+                            ->getDimensions();
+                        if(getSetting('media.watermark_image')) {
+                            // Add watermark to post images
+                            $watermark = Image::make(self::getWatermarkPath());
+                            $tmpWatermarkFile = 'watermark-' . $fileId . '-.png';
+                            $resizePercentage = 75; //70% less then an actual image (play with this value)
+                            $watermarkSize = round($dimensions->getWidth() * ((100 - $resizePercentage) / 100), 2); //watermark will be $resizePercentage less then the actual width of the image
+                            // resize watermark width keep height auto
+                            $watermark->resize($watermarkSize, null, function ($constraint) {
+                                $constraint->aspectRatio();
+                            });
+                            $watermark->encode('png', 100);
+                            Storage::disk('tmp')->put($tmpWatermarkFile, $watermark);
+                            if (getSetting('media.apply_watermark')) {
+                                $video->addWatermark(function (WatermarkFactory $watermark) use ($fileId, $tmpWatermarkFile) {
+                                    $watermark->fromDisk('tmp')
+                                        ->open($tmpWatermarkFile)
+                                        ->right(25)
+                                        ->bottom(25);
+                                });
+                            }
+                        }
+
+                        if(getSetting('media.use_url_watermark')){
+                            $textWaterMark = str_replace(['https://','http://','www.'],'',route('profile',['username'=>Auth::user()->username]));
+                            $textWaterMarkSize = 3 / 100 * $dimensions->getWidth();
+                            // Note: Some hosts might need to default font on public_path('/fonts/OpenSans-Semibold.ttf') instead of verdana
+                            $filter = new CustomFilter("drawtext=text='".$textWaterMark."':x=10:y=H-th-10:fontfile='".(env('FFMPEG_FONT_PATH') ?? 'Verdana')."':fontsize={$textWaterMarkSize}:fontcolor=white: x=(w-text_w)-25: y=(h-text_h)-35");
+                            $video->addFilter($filter);
+                        }
+
+                    }
+
                     // Overriding default ffmpeg lib temporary_files_root behaviour
                     $ffmpegOutputLogDir = storage_path() . '/logs/ffmpeg';
                     $ffmpegPassFile = $ffmpegOutputLogDir . '/' . uniqid();
@@ -361,13 +402,12 @@ class AttachmentServiceProvider extends ServiceProvider
                     if(file_exists($ffmpegPassFile.'-0.log')) unlink($ffmpegPassFile.'-0.log');
                     if(file_exists($ffmpegPassFile.'-1.log')) unlink($ffmpegPassFile.'-1.log');
 
+                    Storage::disk('tmp')->delete($filePath);
+                    if (getSetting('media.apply_watermark') && getSetting('media.watermark_image')) {
+                        Storage::disk('tmp')->delete($tmpWatermarkFile);
+                    }
+                    $filePath = $newfilePath;
                 }
-
-                Storage::disk('tmp')->delete($filePath);
-                if (getSetting('media.apply_watermark') && getSetting('media.watermark_image')) {
-                    Storage::disk('tmp')->delete($tmpWatermarkFile);
-                }
-                $filePath = $newfilePath;
             }
             elseif (getSetting('media.transcoding_driver') === 'coconut'){
                 if($initialFileExtension == 'mp4' && !getSetting('media.coconut_enforce_mp4_conversion')){
