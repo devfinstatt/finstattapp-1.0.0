@@ -312,9 +312,19 @@ class AttachmentServiceProvider extends ServiceProvider
 
                     if(getSetting('media.use_url_watermark')){
                         $textWaterMark = str_replace(['https://', 'http://', 'www.'], '', route('profile', ['username'=>Auth::user()->username]));
-                        $textWaterMarkSize = 3 / 100 * $dimensions->getWidth();
-                        // Note: Some hosts might need to default font on public_path('/fonts/OpenSans-Semibold.ttf') instead of verdana
-                        $filter = new CustomFilter("drawtext=text='".$textWaterMark."':x=10:y=H-th-10:fontfile='".(env('FFMPEG_FONT_PATH') ?? 'Verdana')."':fontsize={$textWaterMarkSize}:fontcolor=white: x=(w-text_w)-25: y=(h-text_h)-35");
+                        $textWaterMarkSize = max(12, round(3 / 100 * $dimensions->getWidth()));
+                        $fontPath = env('FFMPEG_FONT_PATH') ?? public_path('/fonts/OpenSans-Semibold.ttf');
+                        
+                        $filter = new CustomFilter("drawtext=text='{$textWaterMark}':
+                            fontfile='{$fontPath}':
+                            fontsize={$textWaterMarkSize}:
+                            fontcolor=white@0.5:
+                            box=1:
+                            boxcolor=black@0.5:
+                            boxborderw=5:
+                            x=(w-tw-25):
+                            y=(h-th-35)");
+                        
                         $video->addFilter($filter);
                     }
 
