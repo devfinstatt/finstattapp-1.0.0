@@ -259,17 +259,17 @@ class AttachmentServiceProvider extends ServiceProvider
         // Convert videos to mp4s
         if (self::getAttachmentType($fileExtension) === 'video') {
             if (getSetting('media.transcoding_driver') === 'ffmpeg') {
-                // Move tmp file onto local files path, as ffmpeg can't handle absolute paths
-                $filePath = $fileId.'.'.$fileExtension;
-                Storage::disk('tmp')->put($filePath, $fileContent);
-
                 $fileExtension = 'mp4';
                 $newfilePath = $directory.'/'.$fileId.'.'.$fileExtension;
 
+                // Store the original file in S3
+                $originalFilePath = $directory.'/original_'.$fileId.'.'.$initialFileExtension;
+                $storage->put($originalFilePath, $fileContent, 'public');
+
                 // Converting the video
                 $video = FFMpeg::
-                fromDisk('tmp')
-                    ->open($filePath);
+                fromDisk(config('filesystems.defaultFilesystemDriver'))
+                    ->open($originalFilePath);
 
                 // Checking if uploaded videos do no exceed maximum length in seconds
                 if(getSetting('media.max_videos_length')){
@@ -374,7 +374,9 @@ class AttachmentServiceProvider extends ServiceProvider
 
                 }
 
-                Storage::disk('tmp')->delete($filePath);
+                // After processing, remove the original file
+                $storage->delete($originalFilePath);
+
                 if (getSetting('media.apply_watermark') && getSetting('media.watermark_image')) {
                     Storage::disk('tmp')->delete($tmpWatermarkFile);
                 }
