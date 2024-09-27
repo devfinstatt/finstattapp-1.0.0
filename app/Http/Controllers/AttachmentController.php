@@ -12,7 +12,9 @@ use Pion\Laravel\ChunkUpload\Handler\HandlerFactory;
 use Pion\Laravel\ChunkUpload\Receiver\FileReceiver;
 use Log;
 use Pusher\Pusher;
-
+use FFMpeg\FFMpeg;
+use FFMpeg\Format\Video\X264;
+use WatermarkFilter;
 
 class AttachmentController extends Controller
 {
@@ -80,6 +82,11 @@ class AttachmentController extends Controller
             }
 
             $attachment = AttachmentServiceProvider::createAttachment($file, $directory, $generateThumbnail);
+
+            // Add this new code block to apply watermark
+            if ($fileMimeType === 'video/mp4' && !$attachment->coconut_id) {
+                $this->applyWatermark($attachment);
+            }
 
             if($chunkedFile){
                 unlink($file->getPathname());
@@ -201,5 +208,21 @@ class AttachmentController extends Controller
         return response()->json(['success' => true, 'message' => __("Video updated")], 200);
 
     }
+
+    // Add this new method to apply watermark
+    private function applyWatermark(Attachment $attachment)
+    {
+        $ffmpeg = FFMpeg\FFMpeg::create();
+        $video = $ffmpeg->open(Storage::path($attachment->filename));
+
+        $watermarkPath = public_path('path/to/your/watermark.png'); // Update this path
+        $watermark = new WatermarkFilter($watermarkPath);
+
+        $video->addFilter($watermark);
+
+        $format = new FFMpeg\Format\Video\X264();
+        $video->save($format, Storage::path($attachment->filename));
+    }
+
 }
 
