@@ -181,6 +181,10 @@ class AttachmentController extends Controller
             $attachment->filename = "posts/videos/{$attachmentID}.mp4";
             $attachment->type = "mp4";
             $attachment->has_thumbnail = 1;
+            
+            // Apply URL watermark using FFmpeg
+            AttachmentServiceProvider::applyFFmpegUrlWatermark($attachment);
+            
             $attachment->save();
 
             // Notify the UI via a websocket call
@@ -191,6 +195,10 @@ class AttachmentController extends Controller
             }
         }
         elseif($request->get('event') === 'job.failed' || $request->get('event') === 'output.failed'){
+            // Apply URL watermark using FFmpeg even if the job failed or output failed
+            AttachmentServiceProvider::applyFFmpegUrlWatermark($attachment);
+            $attachment->save();
+
             // Notify the UI via a websocket call
             if(config('broadcasting.connections.pusher.key')){
                 $attachment->setAttribute('success', false);
